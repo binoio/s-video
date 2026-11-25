@@ -1,0 +1,101 @@
+name: S-Video
+options:
+  bundleIdPrefix: io.bino
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+  createIntermediateGroups: true
+
+configFiles:
+  Debug: Config.xcconfig
+  Release: Config.xcconfig
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  SVideo:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SVideo
+        excludes:
+          - "**/*.md"
+    info:
+      path: SVideo/Resources/Info.plist
+      properties:
+        CFBundleDisplayName: S-Video
+        CFBundleName: S-Video
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: AccentColor
+        UIBackgroundModes:
+          - remote-notification
+          - fetch
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIRequiresFullScreen: false
+        LSApplicationQueriesSchemes:
+          - youtube
+    entitlements:
+      path: SVideo/Resources/SVideo.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.icloud-container-identifiers:
+          - $(SVIDEO_ICLOUD_CONTAINER)
+        com.apple.developer.icloud-services:
+          - CloudKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(SVIDEO_BUNDLE_ID)
+        PRODUCT_NAME: S-Video
+        TARGETED_DEVICE_FAMILY: "2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+
+  SVideoTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SVideoTests
+    dependencies:
+      - target: SVideo
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(SVIDEO_BUNDLE_ID).tests
+        TARGETED_DEVICE_FAMILY: "2"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/S-Video.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/S-Video
+        BUNDLE_LOADER: $(TEST_HOST)
+
+schemes:
+  S-Video:
+    build:
+      targets:
+        SVideo: all
+        SVideoTests: [test]
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - SVideoTests
+    archive:
+      config: Release

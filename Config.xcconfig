@@ -1,0 +1,5 @@
+// S-Video Signing & Bundle Configuration
+
+DEVELOPMENT_TEAM = 43L352U8Y8
+SVIDEO_BUNDLE_ID = io.bino.svideo
+SVIDEO_ICLOUD_CONTAINER = iCloud.$(SVIDEO_BUNDLE_ID)
