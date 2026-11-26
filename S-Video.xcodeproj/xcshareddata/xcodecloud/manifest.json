@@ -1,0 +1,9 @@
+{
+  "id" : "de0314d4-eba4-4946-81dc-7abefc6f664f",
+  "targets" : [
+    {
+      "id" : "3e227022-2ffc-4ecb-bddf-fadc943d9a4f",
+      "name" : "SVideo"
+    }
+  ]
+}

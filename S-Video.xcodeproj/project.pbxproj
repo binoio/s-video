@@ -78,7 +78,7 @@
 		E6FCE0F1EF9090E014E9D19B /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 		F1FC768F8B53168B5DD1E25D /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		FDEBF89AA12F30E35CC2BEC2 /* YouTubeRSSAndBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YouTubeRSSAndBackupTests.swift; sourceTree = "<group>"; };
-		"TEMP_BEB1D292-EE8A-44DB-8C87-CA0BD47BBA2A" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		"TEMP_6F7531A3-B73F-403A-A4DC-B64948452598" /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -199,10 +199,10 @@
 			);
 			sourceTree = "<group>";
 		};
-		"TEMP_14C7DE82-BFAE-4438-B5A2-15F6C472075D" /* S-Video */ = {
+		"TEMP_6A56A72F-A61E-4C2B-B940-29D558160248" /* S-Video */ = {
 			isa = PBXGroup;
 			children = (
-				"TEMP_BEB1D292-EE8A-44DB-8C87-CA0BD47BBA2A" /* Config.xcconfig */,
+				"TEMP_6F7531A3-B73F-403A-A4DC-B64948452598" /* Config.xcconfig */,
 			);
 			path = "S-Video";
 			sourceTree = "<group>";
@@ -385,7 +385,7 @@
 		};
 		4DFC9B4254AB5C9D0A69C782 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BEB1D292-EE8A-44DB-8C87-CA0BD47BBA2A" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_6F7531A3-B73F-403A-A4DC-B64948452598" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -418,7 +418,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -477,7 +477,7 @@
 		};
 		DE943DCC808DD0A03AFFAD4A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = "TEMP_BEB1D292-EE8A-44DB-8C87-CA0BD47BBA2A" /* Config.xcconfig */;
+			baseConfigurationReference = "TEMP_6F7531A3-B73F-403A-A4DC-B64948452598" /* Config.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -510,7 +510,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;

@@ -49,13 +49,40 @@ struct CloudDataSummary: Sendable, Equatable {
     }
 }
 
+/// Dedicated nonisolated delegate proxy for `CKSyncEngine`.
+/// Keeping `CKSyncEngineDelegate` off the `@MainActor` `@Observable` model avoids
+/// Swift 6 actor-isolation runtime traps when CloudKit invokes callbacks on background queues.
+private final class SyncEngineDelegateProxy: CKSyncEngineDelegate, Sendable {
+    private let onEvent: @Sendable (CKSyncEngine.Event, CKSyncEngine) async -> Void
+    private let onNextBatch: @Sendable (CKSyncEngine.SendChangesContext, CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch?
+
+    init(
+        onEvent: @escaping @Sendable (CKSyncEngine.Event, CKSyncEngine) async -> Void,
+        onNextBatch: @escaping @Sendable (CKSyncEngine.SendChangesContext, CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch?
+    ) {
+        self.onEvent = onEvent
+        self.onNextBatch = onNextBatch
+    }
+
+    func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
+        await onEvent(event, syncEngine)
+    }
+
+    func nextRecordZoneChangeBatch(
+        _ context: CKSyncEngine.SendChangesContext,
+        syncEngine: CKSyncEngine
+    ) async -> CKSyncEngine.RecordZoneChangeBatch? {
+        await onNextBatch(context, syncEngine)
+    }
+}
+
 /// Direct `CKSyncEngine`-backed iCloud sync coordinator.
 /// Syncs ONLY subscriptions (`SVChannel`) and lightweight playback states (`SVVideoState`)
 /// using deterministic `CKRecord.ID`s in `SVideoZone` — zero duplicates and seconds-fast
 /// cold-start onboarding on new iPads.
 @MainActor
 @Observable
-final class CloudSyncEngine: NSObject {
+final class CloudSyncEngine {
     private let logger = Logger(subsystem: "SVideo", category: "CloudSync")
     private static let enabledDefaultsKey = "icloudSyncEnabled"
 
@@ -65,6 +92,7 @@ final class CloudSyncEngine: NSObject {
     private(set) var isEnabled: Bool = UserDefaults.standard.bool(forKey: CloudSyncEngine.enabledDefaultsKey)
 
     @ObservationIgnored private var syncEngine: CKSyncEngine?
+    @ObservationIgnored private var delegateProxy: SyncEngineDelegateProxy?
     @ObservationIgnored private var modelContext: ModelContext?
     @ObservationIgnored private var onChannelsUpdated: (@MainActor () -> Void)?
     @ObservationIgnored private var systemFieldsCache: [String: Data] = [:]
@@ -128,11 +156,11 @@ final class CloudSyncEngine: NSObject {
                 }
             case .noAccount:
                 isAccountAvailable = false
-                syncEngine = nil
+                tearDownEngine()
                 status = .unavailable("Sign in to iCloud in Settings")
             case .restricted:
                 isAccountAvailable = false
-                syncEngine = nil
+                tearDownEngine()
                 status = .unavailable("iCloud is restricted on this iPad")
             case .temporarilyUnavailable:
                 isAccountAvailable = false
@@ -153,7 +181,6 @@ final class CloudSyncEngine: NSObject {
 
     // MARK: - Inspect / Backup / Enable / Disable Flows
 
-    /// Inspects `SVideoZone` in the user's private CloudKit database for existing records.
     func inspectExistingCloudData() async throws -> CloudDataSummary {
         let payload = try await fetchExistingCloudPayload()
         return CloudDataSummary(
@@ -162,12 +189,9 @@ final class CloudSyncEngine: NSObject {
         )
     }
 
-    /// Fetches all existing `SVChannel` and `SVVideoState` records from `SVideoZone`
-    /// so the user can export a JSON backup before choosing "Backup & Start Fresh".
     func fetchExistingCloudPayload() async throws -> SVideoBackupPayload {
         let database = CKContainer.default().privateCloudDatabase
 
-        // Verify zone exists first; a missing zone means no prior iCloud data
         do {
             _ = try await database.recordZone(for: CloudRecordCodec.zoneID)
         } catch let ckError as CKError where ckError.code == .zoneNotFound || ckError.code == .userDeletedZone {
@@ -217,14 +241,11 @@ final class CloudSyncEngine: NSObject {
                 cursor = next.queryCursor
             }
         } catch let ckError as CKError where ckError.code == .unknownItem || ckError.code == .zoneNotFound {
-            // Record type hasn't been created in this private DB yet
             return []
         }
         return collected
     }
 
-    /// Enables iCloud Sync. If `startFresh` is true, atomically deletes `SVideoZone` first
-    /// so CloudKit starts cleanly from this iPad's local library.
     func enableSync(startFresh: Bool) async {
         guard isAccountAvailable else { return }
         status = .syncing
@@ -242,11 +263,10 @@ final class CloudSyncEngine: NSObject {
         await fetchChangesNow()
     }
 
-    /// Disables iCloud Sync on this iPad, optionally clearing `SVideoZone` in iCloud.
     func disableSync(clearCloudData: Bool) async {
         isEnabled = false
         UserDefaults.standard.set(false, forKey: Self.enabledDefaultsKey)
-        syncEngine = nil
+        tearDownEngine()
 
         if clearCloudData {
             status = .syncing
@@ -255,6 +275,11 @@ final class CloudSyncEngine: NSObject {
 
         lastSyncedAt = nil
         status = .disabled
+    }
+
+    private func tearDownEngine() {
+        syncEngine = nil
+        delegateProxy = nil
     }
 
     private func clearCloudZoneAndLocalSyncMetadata() async {
@@ -269,7 +294,7 @@ final class CloudSyncEngine: NSObject {
         try? FileManager.default.removeItem(at: Self.stateSerializationURL)
         systemFieldsCache.removeAll()
         persistSystemFieldsCache()
-        syncEngine = nil
+        tearDownEngine()
     }
 
     private func enqueueAllLocalRecords() {
@@ -291,10 +316,19 @@ final class CloudSyncEngine: NSObject {
     private func initializeEngineIfNeeded(container: CKContainer) {
         guard syncEngine == nil else { return }
         let savedState = loadStateSerialization()
+        let proxy = SyncEngineDelegateProxy(
+            onEvent: { [weak self] event, engine in
+                await self?.processEvent(event, syncEngine: engine)
+            },
+            onNextBatch: { [weak self] context, engine in
+                await self?.buildNextBatch(context: context, syncEngine: engine)
+            }
+        )
+        delegateProxy = proxy
         let configuration = CKSyncEngine.Configuration(
             database: container.privateCloudDatabase,
             stateSerialization: savedState,
-            delegate: self
+            delegate: proxy
         )
         let engine = CKSyncEngine(configuration)
         syncEngine = engine
@@ -358,23 +392,8 @@ final class CloudSyncEngine: NSObject {
         guard let data = try? PropertyListEncoder().encode(systemFieldsCache) else { return }
         try? data.write(to: Self.systemFieldsURL, options: .atomic)
     }
-}
 
-// MARK: - CKSyncEngineDelegate
-
-extension CloudSyncEngine: CKSyncEngineDelegate {
-    nonisolated func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) {
-        Task { @MainActor in
-            self.processEvent(event, syncEngine: syncEngine)
-        }
-    }
-
-    nonisolated func nextRecordZoneChangeBatch(
-        _ context: CKSyncEngine.SendChangesContext,
-        syncEngine: CKSyncEngine
-    ) async -> CKSyncEngine.RecordZoneChangeBatch? {
-        await buildNextBatch(context: context, syncEngine: syncEngine)
-    }
+    // MARK: - Event Handling
 
     private func processEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) {
         switch event {

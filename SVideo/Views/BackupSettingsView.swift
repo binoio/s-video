@@ -18,6 +18,8 @@ struct BackupSettingsView: View {
     @State private var existingCloudSummary: CloudDataSummary?
     @State private var showEnableExistingDataDialog = false
     @State private var showDisableExistingDataDialog = false
+    @State private var showFinalConfirmClearOnDisable = false
+    @State private var showFinalConfirmStartFresh = false
 
     @State private var opmlExportDocument: BinaryExportDocument?
     @State private var jsonExportDocument: BinaryExportDocument?
@@ -176,14 +178,42 @@ struct BackupSettingsView: View {
                 }
             }
             Button("Clear iCloud Data", role: .destructive) {
-                Task {
-                    await syncEngine.disableSync(clearCloudData: true)
-                    showBanner("iCloud Sync disabled and iCloud data cleared.", isError: false)
-                }
+                showFinalConfirmClearOnDisable = true
             }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Existing S-Video data is stored in iCloud. Would you like to leave it untouched for other iPads or clear it?")
+        }
+        .alert(
+            "Permanently Clear iCloud Data?",
+            isPresented: $showFinalConfirmClearOnDisable
+        ) {
+            Button("Permanently Clear iCloud Data", role: .destructive) {
+                Task {
+                    await syncEngine.disableSync(clearCloudData: true)
+                    showBanner("iCloud Sync disabled and iCloud data permanently cleared.", isError: false)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete all synced video sources and watch progress from iCloud across all of your iPads. This action cannot be undone.")
+        }
+        .alert(
+            "Replace Existing iCloud Data?",
+            isPresented: $showFinalConfirmStartFresh
+        ) {
+            Button("Clear iCloud & Start Fresh", role: .destructive) {
+                Task {
+                    await syncEngine.enableSync(startFresh: true)
+                    await coordinator.refreshFeeds(in: modelContext)
+                    showBanner("Backed up previous iCloud data and started fresh.", isError: false)
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                showBanner("Backup saved. Existing iCloud data was not cleared and iCloud Sync remains off.", isError: false)
+            }
+        } message: {
+            Text("Your backup was saved. Continuing will permanently erase the previous iCloud data and replace it with this iPad's current library. This cannot be undone.")
         }
         .fileExporter(
             isPresented: $isExportingCloudBackupBeforeFreshStart,
@@ -193,11 +223,7 @@ struct BackupSettingsView: View {
         ) { result in
             switch result {
             case .success:
-                Task {
-                    await syncEngine.enableSync(startFresh: true)
-                    await coordinator.refreshFeeds(in: modelContext)
-                    showBanner("Backed up previous iCloud data and started fresh.", isError: false)
-                }
+                showFinalConfirmStartFresh = true
             case .failure(let error):
                 showBanner("Backup cancelled (\(error.localizedDescription)). iCloud Sync was not enabled.", isError: true)
             }
