@@ -10,11 +10,13 @@ struct BackupSettingsView: View {
     @AppStorage("recentlyCompletedDays") private var recentlyCompletedDays = 7
     @AppStorage("confirmBeforeDeletingSources") private var confirmBeforeDeletingSources = true
     @AppStorage("autoHideSidebar") private var autoHideSidebar = false
+    @AppStorage("autoPlayNextInList") private var autoPlayNextInList = false
 
     @Query private var channels: [Channel]
     @Query private var videos: [VideoItem]
 
     @State private var isCheckingCloud = false
+    @State private var isSyncingNow = false
     @State private var existingCloudSummary: CloudDataSummary?
     @State private var showEnableExistingDataDialog = false
     @State private var showDisableExistingDataDialog = false
@@ -32,6 +34,10 @@ struct BackupSettingsView: View {
     @State private var statusBanner: String?
     @State private var isErrorBanner = false
 
+    private var isSyncInProgress: Bool {
+        isSyncingNow || syncEngine.status == .syncing || coordinator.isRefreshing
+    }
+
     private var icloudSyncBinding: Binding<Bool> {
         Binding(
             get: { syncEngine.isEnabled && syncEngine.isAccountAvailable },
@@ -43,46 +49,6 @@ struct BackupSettingsView: View {
 
     var body: some View {
         Form {
-            Section {
-                HStack {
-                    Toggle("iCloud Sync", isOn: icloudSyncBinding)
-                        .disabled(!syncEngine.isAccountAvailable || isCheckingCloud)
-
-                    if isCheckingCloud {
-                        ProgressView()
-                            .padding(.leading, 8)
-                    }
-                }
-
-                if syncEngine.isEnabled && syncEngine.isAccountAvailable {
-                    HStack {
-                        Label(syncEngine.status.label, systemImage: syncEngine.status.systemImage)
-                            .font(.subheadline)
-                            .foregroundStyle(syncEngine.status.isProblem ? .red : .secondary)
-                        Spacer()
-                        if let lastSyncedAt = syncEngine.lastSyncedAt {
-                            Text(lastSyncedAt.formatted(.relative(presentation: .named)))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Button {
-                        Task {
-                            await coordinator.syncAndRefresh(syncEngine: syncEngine, in: modelContext)
-                        }
-                    } label: {
-                        Label("Sync Now", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                }
-            } footer: {
-                if !syncEngine.isAccountAvailable {
-                    Text(syncEngine.status.label)
-                } else {
-                    Text("Syncs your video sources and watch progress across iPads using iCloud.")
-                }
-            }
-
             Section("General") {
                 Toggle("Auto Hide Sidebar", isOn: $autoHideSidebar)
                 Toggle("Confirm Before Deleting Sources", isOn: $confirmBeforeDeletingSources)
@@ -95,6 +61,74 @@ struct BackupSettingsView: View {
             }
 
             Section {
+                Toggle("Auto-Play Next in List", isOn: $autoPlayNextInList)
+            } header: {
+                Text("Playback")
+            } footer: {
+                Text("Automatically plays the next video in the current list when playback finishes, unless the End of Video sleep timer is active.")
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Toggle("iCloud Sync", isOn: icloudSyncBinding)
+                            .disabled(!syncEngine.isAccountAvailable || isCheckingCloud)
+
+                        if isCheckingCloud {
+                            ProgressView()
+                                .padding(.leading, 8)
+                        }
+                    }
+
+                    Text("Only Sources and watch progress are synchronized across devices.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+
+                    if !syncEngine.isAccountAvailable {
+                        Text(syncEngine.status.label)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if syncEngine.isEnabled && syncEngine.isAccountAvailable {
+                    HStack {
+                        Label(syncEngine.status.label, systemImage: syncEngine.status.systemImage)
+                            .font(.subheadline)
+                            .foregroundStyle(syncEngine.status.isProblem ? .red : .secondary)
+                        Spacer()
+                        if syncEngine.status == .syncing {
+                            ProgressView()
+                                .controlSize(.small)
+                        } else if let lastSyncedAt = syncEngine.lastSyncedAt {
+                            Text(lastSyncedAt.formatted(.relative(presentation: .named)))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+
+                    Button {
+                        guard !isSyncInProgress else { return }
+                        isSyncingNow = true
+                        Task {
+                            defer { isSyncingNow = false }
+                            await coordinator.syncAndRefresh(syncEngine: syncEngine, in: modelContext)
+                        }
+                    } label: {
+                        HStack {
+                            Label(
+                                isSyncInProgress ? "Syncing…" : "Sync Now",
+                                systemImage: "arrow.triangle.2.circlepath"
+                            )
+                            if isSyncInProgress {
+                                Spacer()
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(isSyncInProgress)
+                }
+
                 Button {
                     let data = SubscriptionBackupService.exportOPML(channels: channels.map(\.snapshot))
                     opmlExportDocument = BinaryExportDocument(data: data)
@@ -130,7 +164,7 @@ struct BackupSettingsView: View {
                     Label("Import Full Backup (JSON)", systemImage: "arrow.down.doc")
                 }
             } header: {
-                Text("Backup & Import / Export")
+                Text("Sync & Backup")
             } footer: {
                 Text("OPML files work with standard RSS/Atom readers and subscription exports. JSON backups include video sources and watched/in-progress states.")
             }
@@ -142,7 +176,7 @@ struct BackupSettingsView: View {
                 }
             }
         }
-        .navigationTitle("Sync & Backup")
+        .navigationTitle("Settings")
         .confirmationDialog(
             "Existing iCloud Data Found",
             isPresented: $showEnableExistingDataDialog,
@@ -328,12 +362,19 @@ struct BackupSettingsView: View {
                 defer { if accessed { url.stopAccessingSecurityScopedResource() } }
                 do {
                     let data = try Data(contentsOf: url)
-                    let count = try await coordinator.importOPML(
+                    let result = try await coordinator.importOPML(
                         data: data,
                         syncEngine: syncEngine,
                         in: modelContext
                     )
-                    showBanner("Imported \(count) feeds from OPML.", isError: false)
+                    if result.skippedDueToLimit > 0 {
+                        showBanner(
+                            "Imported \(result.imported) sources. \(result.skippedDueToLimit) skipped because the maximum of \(Channel.maxSubscribedSources) sources was reached.",
+                            isError: true
+                        )
+                    } else {
+                        showBanner("Imported \(result.imported) sources from OPML.", isError: false)
+                    }
                 } catch {
                     showBanner("OPML import failed: \(error.localizedDescription)", isError: true)
                 }
@@ -356,10 +397,17 @@ struct BackupSettingsView: View {
                         syncEngine: syncEngine,
                         in: modelContext
                     )
-                    showBanner(
-                        "Imported \(imported.channels) feeds and \(imported.states) video states.",
-                        isError: false
-                    )
+                    if imported.skippedChannelsDueToLimit > 0 {
+                        showBanner(
+                            "Imported \(imported.channels) sources and \(imported.states) video states. \(imported.skippedChannelsDueToLimit) sources skipped because the maximum of \(Channel.maxSubscribedSources) sources was reached.",
+                            isError: true
+                        )
+                    } else {
+                        showBanner(
+                            "Imported \(imported.channels) sources and \(imported.states) video states.",
+                            isError: false
+                        )
+                    }
                 } catch {
                     showBanner("JSON import failed: \(error.localizedDescription)", isError: true)
                 }

@@ -25,6 +25,10 @@ struct SubscriptionsView: View {
         channels.filter { selectedSourceIds.contains($0.channelId) }
     }
 
+    private var isAtSourceLimit: Bool {
+        channels.count >= Channel.maxSubscribedSources
+    }
+
     var body: some View {
         List {
             Section {
@@ -34,6 +38,7 @@ struct SubscriptionsView: View {
                         .autocorrectionDisabled()
                         .submitLabel(.done)
                         .onSubmit { addChannel() }
+                        .disabled(isAtSourceLimit)
                         .accessibilityLabel("Video source address")
 
                     Button {
@@ -47,8 +52,14 @@ struct SubscriptionsView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(channelInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAdding)
+                    .disabled(channelInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isAdding || isAtSourceLimit)
                     .accessibilityLabel("Add Video Source")
+                }
+
+                if isAtSourceLimit {
+                    Text("Maximum of \(Channel.maxSubscribedSources) video sources reached. Remove a source before adding another.")
+                        .font(.footnote)
+                        .foregroundStyle(.orange)
                 }
 
                 if let errorMessage {
@@ -60,10 +71,10 @@ struct SubscriptionsView: View {
             } header: {
                 Text("Add Video Source")
             } footer: {
-                Text("Supports any RSS 2.0 or Atom video source (video podcasts, PeerTube, Vimeo, YouTube channels, etc.) with no content-type filtering.")
+                Text("Supports up to \(Channel.maxSubscribedSources) RSS 2.0 or Atom video sources (video podcasts, PeerTube, Vimeo, YouTube channels, etc.) with no content-type filtering.")
             }
 
-            Section("All Sources (\(channels.count))") {
+            Section("All Sources (\(channels.count) / \(Channel.maxSubscribedSources))") {
                 if channels.isEmpty {
                     Text("No video sources added yet.")
                         .foregroundStyle(.secondary)
@@ -117,13 +128,6 @@ struct SubscriptionsView: View {
         .navigationTitle("All Sources")
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                if !selectedSourceIds.isEmpty {
-                    Button("Clear") {
-                        selectedSourceIds.removeAll()
-                    }
-                    .accessibilityLabel("Deselect all sources")
-                }
-
                 Button(role: .destructive) {
                     requestDelete(selectedChannels)
                 } label: {

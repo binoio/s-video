@@ -178,14 +178,14 @@ struct TimelineView: View {
             }
         }
         .navigationDestination(for: VideoItem.self) { video in
-            VideoPlayerScreen(video: video)
+            VideoPlayerScreen(video: video, queue: visibleVideos)
         }
         .sheet(item: $browserURL) { item in
             SafariBrowserSheet(url: item.url)
                 .ignoresSafeArea()
         }
         .alert(syncInfoTitle, isPresented: $showSyncStatusInfo) {
-            Button("Open Sync & Backup") {
+            Button("Open Settings") {
                 onOpenSyncSettings()
             }
             Button("OK", role: .cancel) {}
@@ -216,7 +216,7 @@ struct TimelineView: View {
         .help(syncEngine.status.label)
         .accessibilityLabel("iCloud Sync Status")
         .accessibilityValue(syncEngine.status.label)
-        .accessibilityHint("Shows iCloud sync details and option to open Sync & Backup settings")
+        .accessibilityHint("Shows iCloud sync details and option to open Settings")
     }
 
     private var syncInfoTitle: String {
@@ -232,7 +232,7 @@ struct TimelineView: View {
     private var syncInfoMessage: String {
         switch syncEngine.status {
         case .disabled:
-            return "iCloud Sync is currently turned off on this iPad. Turn it on in Sync & Backup to keep your video sources and watch progress in sync across iPads."
+            return "iCloud Sync is currently turned off on this iPad. Turn it on in Settings to keep your video sources and watch progress in sync across iPads."
         case .idle:
             return "iCloud Sync is ready to keep your video sources and watch progress synced across your iPads."
         case .syncing:
@@ -240,9 +240,9 @@ struct TimelineView: View {
         case .synced(let date):
             return "Last synced \(date.formatted(.relative(presentation: .named)))."
         case .unavailable(let reason):
-            return "\(reason). Sign in to iCloud in iPadOS Settings, then enable iCloud Sync in Sync & Backup."
+            return "\(reason). Sign in to iCloud in iPadOS Settings, then enable iCloud Sync in Settings."
         case .error(let message):
-            return "iCloud Sync encountered an error: \(message). You can check settings or retry in Sync & Backup."
+            return "iCloud Sync encountered an error: \(message). You can check settings or retry in Settings."
         }
     }
 

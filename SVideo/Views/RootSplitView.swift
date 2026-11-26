@@ -4,7 +4,7 @@ import SwiftUI
 enum SidebarDestination: String, CaseIterable, Identifiable {
     case timeline = "Timeline"
     case subscriptions = "All Sources"
-    case syncAndBackup = "Sync & Backup"
+    case settings = "Settings"
 
     var id: String { rawValue }
 
@@ -12,7 +12,7 @@ enum SidebarDestination: String, CaseIterable, Identifiable {
         switch self {
         case .timeline: "play.rectangle.on.rectangle"
         case .subscriptions: "rectangle.stack.badge.plus"
-        case .syncAndBackup: "icloud"
+        case .settings: "gearshape"
         }
     }
 }
@@ -63,11 +63,11 @@ struct RootSplitView: View {
                 switch selection ?? .timeline {
                 case .timeline:
                     TimelineView(onOpenSyncSettings: {
-                        selection = .syncAndBackup
+                        selection = .settings
                     })
                 case .subscriptions:
                     SubscriptionsView()
-                case .syncAndBackup:
+                case .settings:
                     BackupSettingsView()
                 }
             }

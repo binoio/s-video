@@ -8,7 +8,10 @@ struct VideoPlayerScreen: View {
     @Environment(CloudSyncEngine.self) private var syncEngine
     @Environment(SleepTimerManager.self) private var sleepTimer
 
-    @Bindable var video: VideoItem
+    @AppStorage("autoPlayNextInList") private var autoPlayNextInList = false
+
+    @State private var video: VideoItem
+    private let queue: [VideoItem]
 
     @State private var playerController = YouTubePlayerController()
     @State private var directCurrentTime: Double = 0
@@ -18,6 +21,11 @@ struct VideoPlayerScreen: View {
     @State private var browserURL: IdentifiableURL?
     @State private var toastMessage: String?
     @State private var lastPersistedAt: Date = .distantPast
+
+    init(video: VideoItem, queue: [VideoItem] = []) {
+        _video = State(initialValue: video)
+        self.queue = queue
+    }
 
     private var activeTime: Double {
         max(playerController.currentTime, directCurrentTime, video.positionSeconds)
@@ -31,6 +39,7 @@ struct VideoPlayerScreen: View {
         VStack(spacing: 0) {
             ZStack {
                 playerSurface
+                    .id(video.videoId)
                 if dimOpacity > 0 {
                     Color.black
                         .opacity(dimOpacity)
@@ -94,8 +103,7 @@ struct VideoPlayerScreen: View {
                     persistProgress(currentTime: current, duration: duration, force: true)
                 },
                 onEnded: { duration in
-                    markCompleted(duration: duration)
-                    sleepTimer.handleVideoEnded()
+                    handleVideoEnded(duration: duration)
                 },
                 volume: sleepTimer.currentVolume,
                 pauseTrigger: $pauseTrigger
@@ -301,12 +309,36 @@ struct VideoPlayerScreen: View {
             case .paused:
                 persistProgress(currentTime: currentTime, duration: duration, force: true)
             case .ended:
-                markCompleted(duration: duration)
-                sleepTimer.handleVideoEnded()
+                handleVideoEnded(duration: duration)
             default:
                 break
             }
         }
+    }
+
+    private func handleVideoEnded(duration: Double) {
+        let stoppedByEndOfVideoTimer = sleepTimer.mode == .endOfVideo
+        markCompleted(duration: duration)
+        sleepTimer.handleVideoEnded()
+
+        guard !stoppedByEndOfVideoTimer, autoPlayNextInList else { return }
+        advanceToNextVideoIfAvailable()
+    }
+
+    private func advanceToNextVideoIfAvailable() {
+        guard let currentIndex = queue.firstIndex(where: { $0.videoId == video.videoId }) else { return }
+        let nextIndex = queue.index(after: currentIndex)
+        guard queue.indices.contains(nextIndex) else { return }
+
+        let nextVideo = queue[nextIndex]
+        video = nextVideo
+        directCurrentTime = 0
+        directDuration = 0
+        lastPersistedAt = .distantPast
+        playerController = YouTubePlayerController()
+        configureCallbacks()
+        let nextTitle = nextVideo.title.isEmpty ? nextVideo.videoId : nextVideo.title
+        showToast("Up next: \(nextTitle)")
     }
 
     private func persistProgress(currentTime: Double, duration: Double, force: Bool) {

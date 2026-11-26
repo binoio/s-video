@@ -3,6 +3,8 @@ import SwiftData
 
 @Model
 final class Channel {
+    static let maxSubscribedSources = 100
+
     @Attribute(.unique) var channelId: String
     var title: String
     var handle: String?

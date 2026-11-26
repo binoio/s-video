@@ -29,3 +29,7 @@ A focused, iPad-only RSS & Atom video feed player built for falling asleep to yo
    ./scripts/archive.zsh --upload
    ```
 4. Run once on a signed iPad (Development) to initialize the CloudKit schema (`SVChannel`, `SVVideoState` in `SVideoZone`), then deploy the schema from Development to Production in CloudKit Console before App Store release.
+
+## Planned Future Features
+
+- **Per-Device Playlists (Not Yet Enabled):** A `+` button in the left sidebar to create local Playlists with an optional custom name, a default initial state (empty or populated from the current timeline), and manual drag-handle reordering. Playlists will be device-specific—included in JSON backups, but **not** synchronized via iCloud (iCloud Sync remains strictly limited to video sources and read/watched/progress states).

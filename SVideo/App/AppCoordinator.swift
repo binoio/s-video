@@ -1,6 +1,17 @@
 import Foundation
 import SwiftData
 
+enum SourceLimitError: LocalizedError, Equatable {
+    case limitReached(limit: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .limitReached(let limit):
+            return "You've reached the maximum of \(limit) video sources. Remove an existing source before adding another."
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class AppCoordinator {
@@ -46,7 +57,18 @@ final class AppCoordinator {
         syncEngine: CloudSyncEngine,
         in context: ModelContext
     ) async throws -> Channel {
+        let currentChannels = (try? context.fetch(FetchDescriptor<Channel>())) ?? []
+        let activeChannelIDs = Set(currentChannels.filter(\.isSubscribed).map(\.channelId))
+        if activeChannelIDs.count >= Channel.maxSubscribedSources {
+            throw SourceLimitError.limitReached(limit: Channel.maxSubscribedSources)
+        }
+
         let resolved = try await channelResolver.resolve(input: input)
+        if !activeChannelIDs.contains(resolved.channelId),
+           activeChannelIDs.count >= Channel.maxSubscribedSources {
+            throw SourceLimitError.limitReached(limit: Channel.maxSubscribedSources)
+        }
+
         let now = Date.now
         let snapshot = ChannelSnapshot(
             channelId: resolved.channelId,
@@ -81,26 +103,50 @@ final class AppCoordinator {
         data: Data,
         syncEngine: CloudSyncEngine,
         in context: ModelContext
-    ) async throws -> Int {
+    ) async throws -> (imported: Int, skippedDueToLimit: Int) {
         let imported = try SubscriptionBackupService.importOPML(data: data)
+        var activeIDs = Set(((try? context.fetch(FetchDescriptor<Channel>())) ?? []).filter(\.isSubscribed).map(\.channelId))
+        var importedCount = 0
+        var skippedCount = 0
+
         for snapshot in imported {
+            if snapshot.isSubscribed && !activeIDs.contains(snapshot.channelId) {
+                if activeIDs.count >= Channel.maxSubscribedSources {
+                    skippedCount += 1
+                    continue
+                }
+                activeIDs.insert(snapshot.channelId)
+            }
             let channel = LocalStore.upsertChannel(snapshot, in: context)
             syncEngine.enqueueChannelSave(channel.snapshot)
+            importedCount += 1
         }
         try? context.save()
         await refreshFeeds(in: context)
-        return imported.count
+        return (importedCount, skippedCount)
     }
 
     func importJSON(
         data: Data,
         syncEngine: CloudSyncEngine,
         in context: ModelContext
-    ) async throws -> (channels: Int, states: Int) {
+    ) async throws -> (channels: Int, states: Int, skippedChannelsDueToLimit: Int) {
         let payload = try SubscriptionBackupService.importJSON(data: data)
+        var activeIDs = Set(((try? context.fetch(FetchDescriptor<Channel>())) ?? []).filter(\.isSubscribed).map(\.channelId))
+        var importedChannels = 0
+        var skippedChannels = 0
+
         for snapshot in payload.channels {
+            if snapshot.isSubscribed && !activeIDs.contains(snapshot.channelId) {
+                if activeIDs.count >= Channel.maxSubscribedSources {
+                    skippedChannels += 1
+                    continue
+                }
+                activeIDs.insert(snapshot.channelId)
+            }
             let channel = LocalStore.upsertChannel(snapshot, in: context)
             syncEngine.enqueueChannelSave(channel.snapshot)
+            importedChannels += 1
         }
         for state in payload.videoStates {
             LocalStore.applyRemoteVideoState(state, in: context)
@@ -108,6 +154,6 @@ final class AppCoordinator {
         }
         try? context.save()
         await refreshFeeds(in: context)
-        return (payload.channels.count, payload.videoStates.count)
+        return (importedChannels, payload.videoStates.count, skippedChannels)
     }
 }
