@@ -406,7 +406,7 @@ final class CloudSyncEngine {
                 isAccountAvailable = true
                 if isEnabled {
                     ensureZoneScheduled(in: syncEngine)
-                    Task { await fetchChangesNow() }
+                    scheduleDetachedSync()
                 }
             case .signOut:
                 isAccountAvailable = false
@@ -415,7 +415,7 @@ final class CloudSyncEngine {
                 systemFieldsCache.removeAll()
                 persistSystemFieldsCache()
                 if isEnabled {
-                    Task { await fetchChangesNow() }
+                    scheduleDetachedSync()
                 }
             @unknown default:
                 break
@@ -482,8 +482,21 @@ final class CloudSyncEngine {
         try? context.save()
         persistSystemFieldsCache()
 
-        if channelsChanged {
-            onChannelsUpdated?()
+        if channelsChanged, let callback = onChannelsUpdated {
+            Task.detached {
+                await MainActor.run {
+                    callback()
+                }
+            }
+        }
+    }
+
+    private func scheduleDetachedSync() {
+        // CKSyncEngine sets a @TaskLocal re-entrancy guard while running delegate callbacks.
+        // `Task { ... }` inherits task-locals and triggers CloudKit's fatalError when
+        // awaiting `fetchChanges()` / `sendChanges()`; `Task.detached` clears them.
+        Task.detached { [weak self] in
+            await self?.fetchChangesNow()
         }
     }
 
