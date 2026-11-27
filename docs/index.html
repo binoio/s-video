@@ -77,6 +77,24 @@
         .feature-card h3 { margin: 0 0 8px; font-size: 1.2rem; color: var(--accent-light); }
         .feature-card p { color: var(--secondary); margin: 0; }
 
+        .screenshots { margin: 60px 0; }
+        .screenshots h2 { font-size: 2rem; margin: 0 0 10px; letter-spacing: -0.01em; text-align: center; }
+        .screenshots > p { color: var(--secondary); text-align: center; max-width: 600px; margin: 0 auto 32px; }
+        .screenshot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; }
+        .screenshot-card {
+            margin: 0;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: border-color 0.25s, transform 0.25s;
+        }
+        .screenshot-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .screenshot-card a { display: block; text-decoration: none; color: inherit; }
+        .screenshot-card img { width: 100%; height: auto; display: block; }
+        .screenshot-card figcaption { padding: 14px 18px; font-size: 0.95rem; color: var(--secondary); border-top: 1px solid var(--border); }
+        .screenshot-card figcaption strong { color: var(--fg); display: block; margin-bottom: 2px; }
+
         .support {
             margin: 60px 0;
             background: var(--card-bg);
@@ -94,6 +112,7 @@
         @media (max-width: 768px) {
             h1 { font-size: 2.5rem; }
             .subtitle { font-size: 1.15rem; }
+            .screenshot-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -144,6 +163,49 @@
             <div class="feature-card">
                 <h3>Portable Backups</h3>
                 <p>Export and import your subscriptions via standard OPML or full S-Video JSON backups including watch progress.</p>
+            </div>
+        </section>
+
+        <section class="screenshots" id="screenshots">
+            <h2>Screenshots</h2>
+            <p>Designed for iPad in dark mode so winding down feels calm and distraction-free.</p>
+            <div class="screenshot-grid">
+                <figure class="screenshot-card">
+                    <a href="images/01-timeline.png">
+                        <img src="images/01-timeline.png" alt="S-Video Timeline showing unwatched, in-progress, and watched videos" loading="lazy">
+                        <figcaption>
+                            <strong>Timeline</strong>
+                            Unwatched, in-progress, and recently watched videos in one chronological feed.
+                        </figcaption>
+                    </a>
+                </figure>
+                <figure class="screenshot-card">
+                    <a href="images/02-player.png">
+                        <img src="images/02-player.png" alt="S-Video Player with Sleep Timer and Dim Screen controls" loading="lazy">
+                        <figcaption>
+                            <strong>Sleep Timer &amp; Player</strong>
+                            Countdown or End of Video sleep timer with audio fade-out, screen dimming, and timecode links.
+                        </figcaption>
+                    </a>
+                </figure>
+                <figure class="screenshot-card">
+                    <a href="images/03-sources.png">
+                        <img src="images/03-sources.png" alt="S-Video All Sources management screen" loading="lazy">
+                        <figcaption>
+                            <strong>All Sources</strong>
+                            Manage up to 100 RSS 2.0 and Atom video feeds in one place.
+                        </figcaption>
+                    </a>
+                </figure>
+                <figure class="screenshot-card">
+                    <a href="images/04-settings.png">
+                        <img src="images/04-settings.png" alt="S-Video Settings with Playback and Sync & Backup options" loading="lazy">
+                        <figcaption>
+                            <strong>Settings, Sync &amp; Backup</strong>
+                            Configure playback, private iCloud Sync, and OPML/JSON backups.
+                        </figcaption>
+                    </a>
+                </figure>
             </div>
         </section>
 
