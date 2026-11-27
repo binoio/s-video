@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>S-Video - Sleepy Video Player for iPad</title>
+    <meta name="description" content="A focused iPad RSS and Atom video feed player built for winding down, with a fade-out sleep timer, nightstand screen dimming, and private iCloud Sync.">
+    <link rel="icon" type="image/png" href="icon.png">
+    <style>
+        :root {
+            --bg: #0c1021;
+            --fg: #f3f5f9;
+            --secondary: #9aa4b8;
+            --accent: #d4a64a;
+            --accent-light: #f2cb78;
+            --card-bg: #151b33;
+            --border: #252f52;
+            --radius: 12px;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #ffffff;
+                --fg: #1d1d1f;
+                --secondary: #5e6678;
+                --accent: #2a356b;
+                --accent-light: #435399;
+                --card-bg: #f4f6fa;
+                --border: #d9dee8;
+            }
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--fg);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+        nav { padding: 20px 0; display: flex; align-items: center; justify-content: space-between; }
+        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; font-weight: 600; font-size: 1.2rem; }
+        .logo-icon { width: 36px; height: 36px; border-radius: 8px; display: block; }
+        .nav-links { display: flex; align-items: center; gap: 20px; }
+        nav a.nav-link { color: var(--accent-light); text-decoration: none; font-weight: 600; }
+
+        header { text-align: center; padding: 70px 0 50px; }
+        .hero-icon { width: 128px; height: 128px; border-radius: 28px; box-shadow: 0 14px 40px rgba(0,0,0,0.35); margin-bottom: 24px; }
+        h1 {
+            font-size: 3.5rem; font-weight: 700; margin: 0 0 16px; letter-spacing: -0.015em;
+            background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .subtitle { font-size: 1.35rem; color: var(--secondary); max-width: 660px; margin: 0 auto 36px; }
+
+        .cta-container { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+        .cta {
+            display: inline-block; background-color: var(--accent); color: #0c1021; padding: 12px 32px;
+            border-radius: 25px; font-weight: 700; text-decoration: none;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        @media (prefers-color-scheme: light) {
+            .cta { color: #ffffff; }
+        }
+        .cta:hover { transform: scale(1.04); opacity: 0.92; }
+        .version-info { display: block; font-size: 0.9rem; color: var(--secondary); }
+
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin: 50px 0; }
+        .feature-card {
+            background-color: var(--card-bg); padding: 30px; border-radius: var(--radius);
+            border: 1px solid transparent; transition: border-color 0.3s;
+        }
+        .feature-card:hover { border-color: var(--accent); }
+        .feature-card h3 { margin: 0 0 8px; font-size: 1.2rem; color: var(--accent-light); }
+        .feature-card p { color: var(--secondary); margin: 0; }
+
+        .support {
+            margin: 60px 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px;
+        }
+        .support h2 { margin: 0 0 10px; font-size: 1.6rem; }
+        .support p { margin: 0 0 12px; color: var(--secondary); }
+        .support a { color: var(--accent-light); text-decoration: none; font-weight: 600; }
+
+        footer { text-align: center; padding: 50px 0; border-top: 1px solid var(--border); color: var(--secondary); font-size: 0.9rem; }
+        footer a { color: var(--accent-light); text-decoration: none; }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .subtitle { font-size: 1.15rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="./" class="logo">
+                <img class="logo-icon" src="icon.png" alt="S-Video App Icon">
+                S-Video
+            </a>
+            <div class="nav-links">
+                <a href="privacy/" class="nav-link">Privacy</a>
+                <a href="https://github.com/binoio/s-video" class="nav-link">GitHub</a>
+            </div>
+        </nav>
+
+        <header>
+            <img class="hero-icon" src="icon.png" alt="">
+            <h1>S-Video</h1>
+            <p class="subtitle">A calm, iPad-only RSS and Atom video feed player built for winding down and falling asleep.</p>
+            <div class="cta-container">
+                <a href="https://github.com/binoio/s-video" class="cta">View on GitHub</a>
+                <span class="version-info">Requires iPadOS 17.0 or later • Free &amp; Open Source (MIT)</span>
+            </div>
+        </header>
+
+        <section class="features">
+            <div class="feature-card">
+                <h3>Single Chronological Timeline</h3>
+                <p>Unwatched, in-progress, and recently completed videos from all of your sources in one clean, reverse-chronological list.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Universal Video Sources</h3>
+                <p>Subscribe to up to 100 RSS 2.0 or Atom video feeds—video podcasts, PeerTube, Vimeo, YouTube channels, or self-hosted feeds.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Sleep Timer &amp; Dim Screen</h3>
+                <p>15, 30, 45, or 60 minute countdowns—or End of Video—with a gentle 15-second audio fade-out, plus 40% / 65% / 80% nightstand dimming.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Private iCloud Sync</h3>
+                <p>Optionally sync only your video sources and watch progress across your iPads via your private iCloud database—zero duplicates, fast setup.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Playback Your Way</h3>
+                <p>Resume where you left off, optionally auto-play the next video in your list, copy links at exact timecodes, or open in Safari.</p>
+            </div>
+            <div class="feature-card">
+                <h3>Portable Backups</h3>
+                <p>Export and import your subscriptions via standard OPML or full S-Video JSON backups including watch progress.</p>
+            </div>
+        </section>
+
+        <section class="support" id="support">
+            <h2>Support</h2>
+            <p>Have a question, bug report, or feature idea for S-Video? Open an issue on GitHub or review our privacy policy.</p>
+            <p>
+                <a href="https://github.com/binoio/s-video/issues">Report an Issue on GitHub</a>
+                &nbsp;•&nbsp;
+                <a href="privacy/">Privacy Policy</a>
+            </p>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 Michael Bino</p>
+            <p>Part of the <a href="https://bino.io/">Bino.io</a> Family of Apps</p>
+            <p><a href="https://github.com/binoio/s-video">GitHub</a> &nbsp;•&nbsp; <a href="privacy/">Privacy Policy</a></p>
+        </footer>
+    </div>
+</body>
+</html>

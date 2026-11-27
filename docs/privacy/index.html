@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - S-Video</title>
+    <meta name="description" content="Privacy Policy for S-Video: Sleepy Video Player for iPadOS.">
+    <link rel="icon" type="image/png" href="../icon.png">
+    <style>
+        :root {
+            --bg: #0c1021;
+            --fg: #f3f5f9;
+            --secondary: #9aa4b8;
+            --accent: #d4a64a;
+            --accent-light: #f2cb78;
+            --card-bg: #151b33;
+            --border: #252f52;
+            --radius: 12px;
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #ffffff;
+                --fg: #1d1d1f;
+                --secondary: #5e6678;
+                --accent: #2a356b;
+                --accent-light: #435399;
+                --card-bg: #f4f6fa;
+                --border: #d9dee8;
+            }
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--fg);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container { max-width: 780px; margin: 0 auto; padding: 0 20px; }
+
+        nav { padding: 20px 0; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit; font-weight: 600; font-size: 1.15rem; }
+        .logo-icon { width: 32px; height: 32px; border-radius: 7px; display: block; }
+        nav a.nav-link { color: var(--accent-light); text-decoration: none; font-weight: 600; }
+
+        main { padding: 48px 0 64px; }
+        h1 { margin: 0 0 8px; font-size: 2.2rem; letter-spacing: -0.015em; }
+        .updated { color: var(--secondary); margin: 0 0 32px; font-size: 0.95rem; }
+        h2 { margin: 32px 0 10px; font-size: 1.3rem; color: var(--accent-light); }
+        p, li { color: var(--secondary); }
+        strong { color: var(--fg); }
+        ul { padding-left: 20px; }
+        a { color: var(--accent-light); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        footer { text-align: center; padding: 40px 0; border-top: 1px solid var(--border); color: var(--secondary); font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav>
+            <a href="../" class="logo">
+                <img class="logo-icon" src="../icon.png" alt="S-Video App Icon">
+                S-Video
+            </a>
+            <a href="../" class="nav-link">&larr; Back to S-Video</a>
+        </nav>
+
+        <main>
+            <h1>Privacy Policy for S-Video</h1>
+            <p class="updated">Last updated: November 27, 2026</p>
+
+            <h2>Overview</h2>
+            <p>S-Video: Sleepy Video Player is an iPadOS RSS and Atom video feed player. Your privacy is important to us. This policy explains what data the app handles and how it is stored.</p>
+
+            <h2>Data Collection</h2>
+            <p><strong>S-Video does not collect, track, sell, or share any personal data.</strong></p>
+            <p>The app contains no analytics SDKs, no advertising frameworks, no telemetry, and no developer-operated backend servers.</p>
+
+            <h2>Local Storage &amp; Optional iCloud Sync</h2>
+            <p>All app data is stored locally on your iPad. If you choose to enable <strong>iCloud Sync</strong> in Settings, Apple&rsquo;s CloudKit stores only the following data in your private iCloud database so it can sync across your iPads:</p>
+            <ul>
+                <li><strong>Video Sources:</strong> Feed URLs, channel IDs, titles, handles, and subscription status.</li>
+                <li><strong>Watch Progress:</strong> Playback position, duration, watched/in-progress status, and timestamps.</li>
+            </ul>
+            <p>App preferences (such as sidebar visibility, deletion confirmations, and playback settings) remain local to each device. Your private iCloud database is managed by Apple under your Apple Account and is never accessible to the developer.</p>
+
+            <h2>Third-Party Video Sources</h2>
+            <p>S-Video fetches RSS/Atom feeds and loads video streams directly from the third-party publishers and websites you choose to subscribe to (such as YouTube, Vimeo, PeerTube, or podcast hosts). Those requests go directly from your iPad to the publisher&rsquo;s servers and are subject to each publisher&rsquo;s own privacy policy.</p>
+
+            <h2>Backups</h2>
+            <p>You may optionally export your sources (OPML) or full library backup (JSON) to a location you choose via the iPadOS Files picker. Exported files stay entirely under your control.</p>
+
+            <h2>Children&rsquo;s Privacy</h2>
+            <p>S-Video does not collect personal data from any user, including children.</p>
+
+            <h2>Changes to This Policy</h2>
+            <p>If this privacy policy is updated, the revised version will be posted on this page with an updated date.</p>
+
+            <h2>Contact</h2>
+            <p>If you have questions about this privacy policy, you can reach the developer via <a href="https://github.com/binoio/s-video/issues">GitHub Issues</a>.</p>
+        </main>
+
+        <footer>
+            <p>&copy; 2026 Michael Bino &nbsp;•&nbsp; <a href="../">S-Video</a> &nbsp;•&nbsp; <a href="https://bino.io/">Bino.io</a></p>
+        </footer>
+    </div>
+</body>
+</html>
