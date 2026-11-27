@@ -3,9 +3,9 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-ASC_KEY_PATH="${ASC_KEY_PATH:-$HOME/Documents/keys/AuthKey_PW44TFWZ9G.p8}"
-ASC_KEY_ID="${ASC_KEY_ID:-PW44TFWZ9G}"
-ASC_ISSUER_ID="${ASC_ISSUER_ID:-6321d2af-b53c-41b3-b0f6-13e174f02ef6}"
+ASC_KEY_PATH="${ASC_KEY_PATH:-}"
+ASC_KEY_ID="${ASC_KEY_ID:-}"
+ASC_ISSUER_ID="${ASC_ISSUER_ID:-}"
 
 if ! grep -qE '^DEVELOPMENT_TEAM\s*=\s*[A-Z0-9]{10}' Config.xcconfig; then
   echo "Error: Set DEVELOPMENT_TEAM and SVIDEO_BUNDLE_ID in Config.xcconfig before archiving." >&2
@@ -19,7 +19,7 @@ EXPORT_PATH="build/export"
 rm -rf "$ARCHIVE_PATH" "$EXPORT_PATH"
 
 AUTH_ARGS=()
-if [[ -f "$ASC_KEY_PATH" ]]; then
+if [[ -n "$ASC_KEY_PATH" && -n "$ASC_KEY_ID" && -n "$ASC_ISSUER_ID" && -f "$ASC_KEY_PATH" ]]; then
   AUTH_ARGS=(
     -allowProvisioningUpdates
     -authenticationKeyPath "$ASC_KEY_PATH"

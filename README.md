@@ -23,7 +23,7 @@ A focused, iPad-only RSS & Atom video feed player built for falling asleep to yo
    ```zsh
    ./scripts/test.zsh
    ```
-3. Archive (and optionally upload directly to App Store Connect using `~/Documents/keys/AuthKey_PW44TFWZ9G.p8`):
+3. Archive (and optionally upload directly to App Store Connect by setting `ASC_KEY_PATH`, `ASC_KEY_ID`, and `ASC_ISSUER_ID`):
    ```zsh
    ./scripts/archive.zsh
    ./scripts/archive.zsh --upload
