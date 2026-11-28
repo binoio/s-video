@@ -26,6 +26,7 @@ struct RootSplitView: View {
     @AppStorage("autoHideSidebar") private var autoHideSidebar = false
 
     @State private var selection: SidebarDestination? = .timeline
+    @State private var detailPath = NavigationPath()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
     @State private var hasStarted = false
 
@@ -36,6 +37,7 @@ struct RootSplitView: View {
                     var tx = Transaction()
                     tx.disablesAnimations = true
                     withTransaction(tx) {
+                        detailPath = NavigationPath()
                         selection = item
                     }
                     if autoHideSidebar {
@@ -59,10 +61,11 @@ struct RootSplitView: View {
             .navigationTitle("S-Video")
             .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 260)
         } detail: {
-            NavigationStack {
+            NavigationStack(path: $detailPath) {
                 switch selection ?? .timeline {
                 case .timeline:
                     TimelineView(onOpenSyncSettings: {
+                        detailPath = NavigationPath()
                         selection = .settings
                     })
                 case .subscriptions:
@@ -71,6 +74,7 @@ struct RootSplitView: View {
                     BackupSettingsView()
                 }
             }
+            .id(selection ?? .timeline)
         }
         .navigationSplitViewStyle(.balanced)
         .task {
