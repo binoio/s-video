@@ -93,6 +93,35 @@ final class YouTubeRSSAndBackupTests: XCTestCase {
         XCTAssertEqual(parsedA.videos[0].thumbnailURLString, "https://cdn.example.org/thumbs/ep42.jpg")
     }
 
+    func testPeerTubeFeedPrefersDirectMP4MediaContentOverDownloadEnclosure() throws {
+        let rss = """
+        <?xml version="1.0" encoding="utf-8"?>
+        <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+          <channel>
+            <title>Blender Video</title>
+            <item>
+              <guid>blender-1</guid>
+              <title>Open Movie Demo</title>
+              <link>https://video.blender.org/w/abc123</link>
+              <pubDate>Wed, 25 Nov 2026 10:03:23 +0000</pubDate>
+              <enclosure length="797080747" type="video/mp4" url="https://video.blender.org/download/videos/generate/abc123?videoFileIds=675308" />
+              <media:content type="video/mp4" medium="video" height="1080" url="https://video.blender.org/object-storage/web_videos/abc123-1080.mp4" isDefault="true" />
+              <media:content type="video/mp4" medium="video" height="480" url="https://video.blender.org/object-storage/web_videos/abc123-480.mp4" isDefault="false" />
+              <media:content type="audio/mp4" medium="video" height="0" url="https://video.blender.org/object-storage/web_videos/abc123-0.mp4" isDefault="false" />
+              <media:thumbnail url="https://video.blender.org/thumbs/abc123.jpg" />
+            </item>
+          </channel>
+        </rss>
+        """
+
+        let parsed = try YouTubeRSSParser.parse(data: Data(rss.utf8))
+        XCTAssertEqual(parsed.videos.count, 1)
+        XCTAssertEqual(
+            parsed.videos[0].mediaURLString,
+            "https://video.blender.org/object-storage/web_videos/abc123-1080.mp4"
+        )
+    }
+
     func testChannelIDAndAlternateFeedDiscoveryHelpers() {
         XCTAssertTrue(YouTubeChannelResolver.isChannelId("UC1234567890123456789012"))
         XCTAssertFalse(YouTubeChannelResolver.isChannelId("not-a-channel"))

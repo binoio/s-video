@@ -36,6 +36,7 @@ final class YouTubeRSSParser: NSObject, XMLParserDelegate {
     private var itemPublished = ""
     private var itemLink = ""
     private var itemMediaURL: String?
+    private var itemMediaScore = -1
     private var itemThumbnailURL: String?
 
     private static let isoFractionalStyle = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
@@ -75,6 +76,7 @@ final class YouTubeRSSParser: NSObject, XMLParserDelegate {
             itemPublished = ""
             itemLink = ""
             itemMediaURL = nil
+            itemMediaScore = -1
             itemThumbnailURL = nil
         case "author":
             inAuthor = true
@@ -84,20 +86,22 @@ final class YouTubeRSSParser: NSObject, XMLParserDelegate {
                 if rel == "alternate" || itemLink.isEmpty {
                     itemLink = href
                 } else if rel == "enclosure", Self.isVideoType(attributeDict["type"], url: href) {
-                    itemMediaURL = href
+                    considerMediaCandidate(url: href, isDefault: false)
                 }
             }
         case "enclosure":
             if inItem, let url = attributeDict["url"], !url.isEmpty,
                Self.isVideoType(attributeDict["type"], url: url) {
-                itemMediaURL = url
+                considerMediaCandidate(url: url, isDefault: false)
             }
         case "media:content":
             if inItem, let url = attributeDict["url"], !url.isEmpty {
                 let type = attributeDict["type"] ?? ""
                 let medium = attributeDict["medium"] ?? ""
-                if medium == "video" || Self.isVideoType(type, url: url) {
-                    itemMediaURL = itemMediaURL ?? url
+                let isAudioOnly = type.lowercased().hasPrefix("audio/")
+                if !isAudioOnly, (medium == "video" || Self.isVideoType(type, url: url)) {
+                    let isDefault = attributeDict["isDefault"]?.lowercased() == "true"
+                    considerMediaCandidate(url: url, isDefault: isDefault)
                 }
             }
         case "media:thumbnail":
@@ -221,13 +225,37 @@ final class YouTubeRSSParser: NSObject, XMLParserDelegate {
         ))
     }
 
-    private static func isVideoType(_ mimeType: String?, url: String) -> Bool {
-        if let mime = mimeType?.lowercased(), mime.hasPrefix("video/") || mime.contains("mpegurl") {
-            return true
+    private func considerMediaCandidate(url: String, isDefault: Bool) {
+        var score = 0
+        if Self.hasDirectVideoExtension(url) {
+            score += 2
+        }
+        if isDefault {
+            score += 1
+        }
+        if score > itemMediaScore {
+            itemMediaScore = score
+            itemMediaURL = url
+        }
+    }
+
+    private static func hasDirectVideoExtension(_ url: String) -> Bool {
+        if let ext = URL(string: url)?.pathExtension.lowercased(), !ext.isEmpty {
+            return ext == "mp4" || ext == "m4v" || ext == "mov" || ext == "m3u8"
         }
         let lower = url.lowercased()
         return lower.hasSuffix(".mp4") || lower.hasSuffix(".m4v")
             || lower.hasSuffix(".mov") || lower.hasSuffix(".m3u8")
+    }
+
+    private static func isVideoType(_ mimeType: String?, url: String) -> Bool {
+        if let mime = mimeType?.lowercased() {
+            if mime.hasPrefix("audio/") { return false }
+            if mime.hasPrefix("video/") || mime.contains("mpegurl") {
+                return true
+            }
+        }
+        return hasDirectVideoExtension(url)
     }
 
     private static func parseDate(_ raw: String) -> Date? {
