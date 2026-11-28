@@ -16,6 +16,7 @@ struct VideoPlayerScreen: View {
     @State private var playerController = YouTubePlayerController()
     @State private var directCurrentTime: Double = 0
     @State private var directDuration: Double = 0
+    @State private var directPlaybackFailed = false
     @State private var pauseTrigger = 0
     @State private var dimOpacity: Double = 0.0
     @State private var browserURL: IdentifiableURL?
@@ -40,6 +41,9 @@ struct VideoPlayerScreen: View {
             ZStack {
                 playerSurface
                     .id(video.videoId)
+                    .onChange(of: video.videoId) { _, _ in
+                        directPlaybackFailed = false
+                    }
                 if dimOpacity > 0 {
                     Color.black
                         .opacity(dimOpacity)
@@ -88,7 +92,7 @@ struct VideoPlayerScreen: View {
 
     @ViewBuilder
     private var playerSurface: some View {
-        if let mediaURL = video.mediaURL {
+        if let mediaURL = video.mediaURL, !directPlaybackFailed {
             DirectMediaPlayerView(
                 url: mediaURL,
                 startSeconds: video.watchStatus == .watched ? 0 : video.positionSeconds,
@@ -104,6 +108,9 @@ struct VideoPlayerScreen: View {
                 },
                 onEnded: { duration in
                     handleVideoEnded(duration: duration)
+                },
+                onFailed: {
+                    directPlaybackFailed = true
                 },
                 volume: sleepTimer.currentVolume,
                 pauseTrigger: $pauseTrigger

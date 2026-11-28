@@ -9,12 +9,14 @@ struct DirectMediaPlayerView: View {
     let onProgress: (Double, Double) -> Void
     let onPaused: (Double, Double) -> Void
     let onEnded: (Double) -> Void
+    var onFailed: (() -> Void)? = nil
     let volume: Double
     @Binding var pauseTrigger: Int
 
     @State private var player: AVPlayer?
     @State private var timeObserver: Any?
     @State private var endObserver: NSObjectProtocol?
+    @State private var statusObserver: NSKeyValueObservation?
 
     var body: some View {
         VideoPlayer(player: player)
@@ -62,10 +64,20 @@ struct DirectMediaPlayerView: View {
             }
         }
 
+        statusObserver = avPlayer.currentItem?.observe(\.status, options: [.new]) { item, _ in
+            if item.status == .failed {
+                Task { @MainActor in
+                    onFailed?()
+                }
+            }
+        }
+
         player = avPlayer
     }
 
     private func tearDownPlayer() {
+        statusObserver?.invalidate()
+        statusObserver = nil
         if let player {
             let current = player.currentTime().seconds
             let duration = player.currentItem?.duration.seconds ?? 0
