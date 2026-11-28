@@ -111,4 +111,16 @@ enum LocalStore {
             context.insert(placeholder)
         }
     }
+
+    @MainActor
+    @discardableResult
+    static func deleteVideos(forChannelId channelId: String, in context: ModelContext) -> [String] {
+        let descriptor = FetchDescriptor<VideoItem>(predicate: #Predicate { $0.channelId == channelId })
+        let items = (try? context.fetch(descriptor)) ?? []
+        let deletedIds = items.map(\.videoId)
+        for item in items {
+            context.delete(item)
+        }
+        return deletedIds
+    }
 }

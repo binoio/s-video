@@ -95,8 +95,10 @@ final class AppCoordinator {
     ) {
         channel.isSubscribed = false
         channel.updatedAt = .now
+        let deletedVideoIds = LocalStore.deleteVideos(forChannelId: channel.channelId, in: context)
         try? context.save()
         syncEngine.enqueueChannelSave(channel.snapshot)
+        syncEngine.enqueueVideoStateDeletes(videoIds: deletedVideoIds)
     }
 
     func importOPML(
