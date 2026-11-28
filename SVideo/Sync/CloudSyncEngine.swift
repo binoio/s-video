@@ -353,6 +353,14 @@ final class CloudSyncEngine {
         engine.state.add(pendingRecordZoneChanges: [.saveRecord(recordID)])
     }
 
+    func enqueueVideoStateDeletes(videoIds: [String]) {
+        guard isEnabled, let engine = syncEngine, !videoIds.isEmpty else { return }
+        let changes: [CKSyncEngine.PendingRecordZoneChange] = videoIds.map {
+            .deleteRecord(CloudRecordCodec.videoStateRecordID(for: $0))
+        }
+        engine.state.add(pendingRecordZoneChanges: changes)
+    }
+
     func fetchChangesNow() async {
         guard isEnabled, let engine = syncEngine else { return }
         status = .syncing

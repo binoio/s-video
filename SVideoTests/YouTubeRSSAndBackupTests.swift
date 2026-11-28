@@ -250,4 +250,49 @@ final class YouTubeRSSAndBackupTests: XCTestCase {
         XCTAssertEqual(all[0].watchStatus, .watched)
         XCTAssertEqual(all[0].positionSeconds, 500)
     }
+
+    @MainActor
+    func testUnsubscribeDeletesChannelVideosAndResetsWatchProgressOnResubscribe() throws {
+        let container = try LocalStore.makeContainer(inMemory: true)
+        let context = container.mainContext
+        let coordinator = AppCoordinator()
+        let syncEngine = CloudSyncEngine()
+
+        let channelSnapshot = ChannelSnapshot(
+            channelId: "feed-demo-1",
+            title: "Demo Feed",
+            handle: nil,
+            feedURLString: "https://example.org/feed.xml",
+            addedAt: .now,
+            isSubscribed: true,
+            updatedAt: .now
+        )
+        let channel = LocalStore.upsertChannel(channelSnapshot, in: context)
+        let feedVideo = FeedVideo(
+            videoId: "vid-demo-1",
+            channelId: "feed-demo-1",
+            channelTitle: "Demo Feed",
+            title: "Episode 1",
+            publishedAt: .now,
+            thumbnailURLString: nil,
+            videoURLString: "https://example.org/watch/1",
+            mediaURLString: "https://example.org/video/1.mp4"
+        )
+        LocalStore.upsertFeedVideos([feedVideo], in: context)
+
+        let existing = try XCTUnwrap(try context.fetch(FetchDescriptor<VideoItem>()).first)
+        existing.positionSeconds = 120
+        existing.durationSeconds = 300
+        existing.watchStatus = .inProgress
+        try context.save()
+
+        coordinator.unsubscribe(channel, syncEngine: syncEngine, in: context)
+        XCTAssertFalse(channel.isSubscribed)
+        XCTAssertEqual(try context.fetch(FetchDescriptor<VideoItem>()).count, 0)
+
+        LocalStore.upsertFeedVideos([feedVideo], in: context)
+        let readded = try XCTUnwrap(try context.fetch(FetchDescriptor<VideoItem>()).first)
+        XCTAssertEqual(readded.watchStatus, .unwatched)
+        XCTAssertEqual(readded.positionSeconds, 0)
+    }
 }
